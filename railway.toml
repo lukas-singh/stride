@@ -6,4 +6,6 @@ buildCommand = "cd server && npm install"
 startCommand = "cd server && node index.js"
 
 [variables]
-NODE_VERSION = "22"
+# Nixpacks selects the Node version from NIXPACKS_NODE_VERSION (NOT NODE_VERSION).
+# Node 22 has a better-sqlite3 prebuilt binary, so no native compilation is needed.
+NIXPACKS_NODE_VERSION = "22"

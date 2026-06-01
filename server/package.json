@@ -4,6 +4,9 @@
   "description": "Stride run tracking API",
   "type": "module",
   "main": "index.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
