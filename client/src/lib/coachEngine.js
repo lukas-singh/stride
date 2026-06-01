@@ -11,8 +11,20 @@ export const RACE_DISTANCES = {
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july',
   'august', 'september', 'october', 'november', 'december'];
 
+// ---------------- SAFE DEFAULTS ----------------
+// Returned whenever a calculation fails, so a bad input never throws into render.
+const SAFE_GOAL = { raceDistance: null, targetPaceSeconds: null, targetDate: null, weeksRemaining: null };
+const SAFE_PREDICTION = { predictedSeconds: 0, racePaceSeconds: 0, avgPace: 0, confidence: 'Low', deltaSeconds: null, trend: 'flat', weeklyMileage: 0 };
+const SAFE_TREND = { label: 'flat', slope: 0 };
+
+// Always coerce the runs argument to a clean array of run-like objects.
+function asRuns(runs) {
+  return Array.isArray(runs) ? runs.filter((r) => r && typeof r === 'object') : [];
+}
+
 // ---------------- GOAL PARSER ----------------
 export function parseGoal(text) {
+  try {
   const raw = (text || '').toLowerCase();
 
   // distance — fuzzy match
@@ -60,6 +72,10 @@ export function parseGoal(text) {
   }
 
   return { raceDistance, targetPaceSeconds, targetDate, weeksRemaining };
+  } catch (e) {
+    console.error('[coachEngine] parseGoal failed:', e);
+    return { ...SAFE_GOAL };
+  }
 }
 
 // ---------------- STATS HELPERS ----------------
@@ -103,21 +119,28 @@ function sortByDateAsc(runs) {
 
 // ---------------- PACE TREND ----------------
 export function paceTrend(runs) {
-  const sorted = sortByDateAsc(runs).slice(-20);
-  if (sorted.length < 3) return { label: 'flat', slope: 0 };
-  const s = slope(sorted.map((r) => r.pace_seconds));
-  if (s < -0.6) return { label: 'improving', slope: s };
-  if (s > 0.6) return { label: 'declining', slope: s };
-  return { label: 'flat', slope: s };
+  try {
+    const sorted = sortByDateAsc(asRuns(runs)).slice(-20);
+    if (sorted.length < 3) return { ...SAFE_TREND };
+    const s = slope(sorted.map((r) => r.pace_seconds));
+    if (s < -0.6) return { label: 'improving', slope: s };
+    if (s > 0.6) return { label: 'declining', slope: s };
+    return { label: 'flat', slope: s };
+  } catch (e) {
+    console.error('[coachEngine] paceTrend failed:', e);
+    return { ...SAFE_TREND };
+  }
 }
 
 // ---------------- RACE TIME PREDICTION ----------------
 export function predictRaceTime(runs, goal) {
+  try {
+  goal = goal || {};
   const dist = RACE_DISTANCES[goal.raceDistance] || RACE_DISTANCES['10K'];
-  const sorted = sortByDateAsc(runs);
+  const sorted = sortByDateAsc(asRuns(runs));
   const last10 = sorted.slice(-10);
   if (!last10.length) {
-    return { predictedSeconds: 0, confidence: 'Low', deltaSeconds: null, avgPace: 0, trend: 'flat' };
+    return { ...SAFE_PREDICTION };
   }
   const avgPace = avg(last10.map((r) => r.pace_seconds));
   const trend = paceTrend(runs);
@@ -160,6 +183,10 @@ export function predictRaceTime(runs, goal) {
     trend: trend.label,
     weeklyMileage: +wkMileage.toFixed(1),
   };
+  } catch (e) {
+    console.error('[coachEngine] predictRaceTime failed:', e);
+    return { ...SAFE_PREDICTION };
+  }
 }
 
 // ---------------- FITNESS ASSESSMENT ----------------
@@ -172,6 +199,8 @@ const FITNESS_DESCRIPTIONS = {
 };
 
 export function assessFitness(runs) {
+  try {
+  runs = asRuns(runs);
   if (runs.length < 3) {
     return { level: 'Base Building', description: FITNESS_DESCRIPTIONS['Base Building'] };
   }
@@ -201,10 +230,17 @@ export function assessFitness(runs) {
   else if (score >= 2) level = 'Developing';
 
   return { level, description: FITNESS_DESCRIPTIONS[level], stats: { avgDifficulty: +avgDifficulty.toFixed(1), avgHR: Math.round(avgHR), weeklyMileage: +wkMileage.toFixed(1), trend: trend.label } };
+  } catch (e) {
+    console.error('[coachEngine] assessFitness failed:', e);
+    return { level: 'Base Building', description: FITNESS_DESCRIPTIONS['Base Building'] };
+  }
 }
 
 // ---------------- WEEKLY TRAINING PLAN ----------------
 export function generatePlan(goal, runs) {
+  try {
+  goal = goal || {};
+  runs = asRuns(runs);
   const weeks = Math.max(1, Math.min(goal.weeksRemaining || 8, 24));
   const dist = RACE_DISTANCES[goal.raceDistance] || RACE_DISTANCES['Half Marathon'];
   const goalPace = goal.targetPaceSeconds || (runs.length ? Math.round(avg(sortByDateAsc(runs).slice(-10).map((r) => r.pace_seconds))) : 540);
@@ -253,6 +289,10 @@ export function generatePlan(goal, runs) {
     });
   }
   return plan;
+  } catch (e) {
+    console.error('[coachEngine] generatePlan failed:', e);
+    return [];
+  }
 }
 
 function buildWeekWorkouts({ phase, totalMiles, longRunMiles, paces, includeInterval }) {
@@ -290,6 +330,9 @@ function buildWeekWorkouts({ phase, totalMiles, longRunMiles, paces, includeInte
 
 // ---------------- SUGGESTIONS ----------------
 export function generateSuggestions(runs, goal) {
+  try {
+  runs = asRuns(runs);
+  goal = goal || {};
   const out = [];
   const sorted = sortByDateAsc(runs);
   const withHR = runs.filter((r) => r.avg_hr > 0);
@@ -342,14 +385,27 @@ export function generateSuggestions(runs, goal) {
   while (out.length < 6 && i < filler.length) out.push(filler[i++]);
 
   return out.slice(0, 8);
+  } catch (e) {
+    console.error('[coachEngine] generateSuggestions failed:', e);
+    return [
+      { icon: '🏁', text: 'Race week: trust the taper, sleep well, and start the first mile slower than goal pace.' },
+      { icon: '💧', text: 'Hydrate through the week and practice race-day fueling on long runs — never try something new on race day.' },
+      { icon: '😴', text: 'Aim for 7–9 hours of sleep — recovery is when adaptation actually happens.' },
+    ];
+  }
 }
 
 // ---------------- TOP-LEVEL ----------------
+// Each sub-function already returns a safe default on failure, so a single bad
+// calculation degrades that one section rather than breaking the whole result.
 export function runCoach(text, runs) {
+  const safe = asRuns(runs);
   const goal = parseGoal(text);
-  const prediction = predictRaceTime(runs, goal);
-  const fitness = assessFitness(runs);
-  const plan = generatePlan(goal, runs);
-  const suggestions = generateSuggestions(runs, goal);
-  return { goal, prediction, fitness, plan, suggestions };
+  return {
+    goal,
+    prediction: predictRaceTime(safe, goal),
+    fitness: assessFitness(safe),
+    plan: generatePlan(goal, safe),
+    suggestions: generateSuggestions(safe, goal),
+  };
 }

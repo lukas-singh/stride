@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import ErrorBoundary from '../components/ErrorBoundary.jsx';
 import { CardSkeletonList } from '../components/Skeleton.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { api } from '../api.js';
@@ -26,32 +27,30 @@ export default function Coach() {
   const [busy, setBusy] = useState(false);
   const [savedGoal, setSavedGoal] = useState(undefined);
 
+  // Load runs + any saved goal together, then rebuild a COMPLETE result from
+  // the user's data. (The previous version set a partial result with no
+  // `fitness`/`suggestions`, which crashed CoachResult on render.)
   useEffect(() => {
-    api('/runs').then(setRuns).catch(() => setRuns([]));
-    api('/goals').then((g) => {
-      setSavedGoal(g);
-      if (g) {
-        setGoalText(g.raw_text);
-        if (g.plan_json && g.prediction_json) {
-          // rebuild a display result from persisted + recompute fitness/suggestions
-          try {
-            const plan = JSON.parse(g.plan_json);
-            const prediction = JSON.parse(g.prediction_json);
-            setResult((prev) => prev || { plan, prediction, restored: true, goal: { raceDistance: g.race_distance, targetPaceSeconds: g.target_pace_seconds } });
-          } catch { /* ignore */ }
+    let mounted = true;
+    Promise.all([
+      api('/runs').catch(() => []),
+      api('/goals').catch(() => null),
+    ]).then(([runsData, goal]) => {
+      if (!mounted) return;
+      const safeRuns = Array.isArray(runsData) ? runsData : [];
+      setRuns(safeRuns);
+      setSavedGoal(goal || null);
+      if (goal && goal.raw_text) {
+        setGoalText(goal.raw_text);
+        try {
+          setResult(runCoach(goal.raw_text, safeRuns));
+        } catch (e) {
+          console.error('Failed to restore saved coaching plan:', e);
         }
       }
-    }).catch(() => setSavedGoal(null));
+    });
+    return () => { mounted = false; };
   }, []);
-
-  // once runs load and we restored a goal, fill in fitness + suggestions
-  useEffect(() => {
-    if (runs && result?.restored) {
-      const full = runCoach(goalText, runs);
-      setResult(full);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runs]);
 
   async function generate() {
     if (!goalText.trim()) return toast.error('Describe your goal first.');
@@ -105,25 +104,46 @@ export default function Coach() {
         )}
       </div>
 
-      {loading ? (
-        <div className="mt-4"><CardSkeletonList count={3} height="h-28" /></div>
-      ) : !result ? (
-        <div className="mt-4">
-          {runs.length === 0 ? (
-            <EmptyState icon="📋" title="No runs to analyze" message="Log a few runs and your coach will build a personalized race plan." ctaLabel="Log a Run →" ctaTo="/log" />
-          ) : (
-            <EmptyState icon="🎯" title="Set your goal" message="Tell the coach your target race, pace, and month — then hit Generate Plan." />
-          )}
-        </div>
-      ) : (
-        <CoachResult result={result} />
-      )}
+      <ErrorBoundary
+        resetKey={result}
+        fallback={({ reset }) => (
+          <div className="mt-4">
+            <EmptyState
+              icon="😵‍💫"
+              title="Couldn't build your plan"
+              message="The coach hit an unexpected error crunching your data. Your runs are safe — try generating again."
+              ctaLabel="Try again"
+              onCta={reset}
+            />
+          </div>
+        )}
+      >
+        {loading ? (
+          <div className="mt-4"><CardSkeletonList count={3} height="h-28" /></div>
+        ) : !result ? (
+          <div className="mt-4">
+            {runs.length === 0 ? (
+              <EmptyState icon="📋" title="No runs to analyze" message="Log a few runs and your coach will build a personalized race plan." ctaLabel="Log a Run →" ctaTo="/log" />
+            ) : (
+              <EmptyState icon="🎯" title="Set your goal" message="Tell the coach your target race, pace, and month — then hit Generate Plan." />
+            )}
+          </div>
+        ) : (
+          <CoachResult result={result} />
+        )}
+      </ErrorBoundary>
     </Layout>
   );
 }
 
 function CoachResult({ result }) {
-  const { prediction, fitness, plan, suggestions, goal } = result;
+  // Defensive defaults: even a partial/legacy result renders rather than crashes.
+  const {
+    prediction = {},
+    fitness = { level: 'Base Building', description: '' },
+    plan = [],
+    suggestions = [],
+  } = result || {};
 
   return (
     <div className="space-y-6 mt-5">
