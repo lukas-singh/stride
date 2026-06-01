@@ -16,15 +16,21 @@ function Tab({ tab }) {
     >
       {({ isActive }) => (
         <>
-          <span className={`text-xl transition-transform duration-150 ${isActive ? 'scale-110' : 'opacity-70'}`}>
+          <span
+            className={`text-xl transition-transform duration-150 ${isActive ? 'scale-110' : 'opacity-70'}`}
+            style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(0,245,160,0.7))' } : undefined}
+          >
             {tab.icon}
           </span>
           <span className={`text-[10px] font-semibold ${isActive ? 'text-primary' : 'text-muted'}`}>
             {tab.label}
           </span>
-          {isActive && (
-            <span className="absolute -bottom-0 h-[3px] w-7 rounded-full bg-primary shadow-glow" />
-          )}
+          {/* active dot indicator (with glow) */}
+          <span
+            className={`mt-0.5 w-1.5 h-1.5 rounded-full transition-all duration-150 ${
+              isActive ? 'bg-primary shadow-glow scale-100' : 'bg-transparent scale-0'
+            }`}
+          />
         </>
       )}
     </NavLink>
@@ -35,7 +41,7 @@ export default function BottomNav() {
   const navigate = useNavigate();
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40">
-      <div className="relative h-[68px] bg-surface/95 backdrop-blur border-t border-border flex items-stretch px-2 pb-[env(safe-area-inset-bottom)]">
+      <div className="relative h-[68px] bg-surface/70 backdrop-blur-xl border-t border-border flex items-stretch px-2 pb-[env(safe-area-inset-bottom)]">
         <Tab tab={tabs[0]} />
         <Tab tab={tabs[1]} />
         {/* center spacer for FAB */}

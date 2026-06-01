@@ -21,7 +21,8 @@ function publicUser(u) {
 }
 
 const RUN_FIELDS = ['date', 'distance', 'duration_seconds', 'pace_seconds', 'elevation_gain',
-  'calories', 'avg_hr', 'temperature', 'wind_speed', 'humidity', 'difficulty', 'run_type', 'notes'];
+  'calories', 'avg_hr', 'temperature', 'wind_speed', 'humidity', 'difficulty', 'run_type',
+  'weather_condition', 'notes'];
 
 async function start() {
   try {
@@ -122,8 +123,8 @@ async function start() {
       const b = req.body || {};
       if (!b.date || !(b.distance > 0)) return res.status(400).json({ error: 'Date and distance are required' });
       const info = db.prepare(`INSERT INTO runs
-        (user_id, date, distance, duration_seconds, pace_seconds, elevation_gain, calories, avg_hr, temperature, wind_speed, humidity, difficulty, run_type, notes)
-        VALUES (@user_id, @date, @distance, @duration_seconds, @pace_seconds, @elevation_gain, @calories, @avg_hr, @temperature, @wind_speed, @humidity, @difficulty, @run_type, @notes)`)
+        (user_id, date, distance, duration_seconds, pace_seconds, elevation_gain, calories, avg_hr, temperature, wind_speed, humidity, difficulty, run_type, weather_condition, notes)
+        VALUES (@user_id, @date, @distance, @duration_seconds, @pace_seconds, @elevation_gain, @calories, @avg_hr, @temperature, @wind_speed, @humidity, @difficulty, @run_type, @weather_condition, @notes)`)
         .run({
           user_id: req.user.id,
           date: b.date,
@@ -138,6 +139,7 @@ async function start() {
           humidity: +b.humidity || 0,
           difficulty: +b.difficulty || 5,
           run_type: b.run_type || 'Easy',
+          weather_condition: b.weather_condition || '',
           notes: b.notes || ''
         });
       res.json(db.prepare('SELECT * FROM runs WHERE id = ?').get(info.lastInsertRowid));
@@ -152,7 +154,8 @@ async function start() {
       db.prepare(`UPDATE runs SET
         date=@date, distance=@distance, duration_seconds=@duration_seconds, pace_seconds=@pace_seconds,
         elevation_gain=@elevation_gain, calories=@calories, avg_hr=@avg_hr, temperature=@temperature,
-        wind_speed=@wind_speed, humidity=@humidity, difficulty=@difficulty, run_type=@run_type, notes=@notes
+        wind_speed=@wind_speed, humidity=@humidity, difficulty=@difficulty, run_type=@run_type,
+        weather_condition=@weather_condition, notes=@notes
         WHERE id=@id AND user_id=@user_id`)
         .run({ ...merged, id: run.id, user_id: req.user.id });
       res.json(db.prepare('SELECT * FROM runs WHERE id = ?').get(run.id));

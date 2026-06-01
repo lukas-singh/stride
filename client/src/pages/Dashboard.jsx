@@ -7,7 +7,8 @@ import EmptyState from '../components/EmptyState.jsx';
 import { StatSkeletonGrid, CardSkeletonList } from '../components/Skeleton.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
-import { fmtDuration, fmtPace, fmtDate } from '../lib/format.js';
+import { fmtDuration, fmtPace, fmtDate, relativeDay } from '../lib/format.js';
+import { weatherIcon } from '../lib/weather.js';
 
 function greeting() {
   const h = new Date().getHours();
@@ -16,13 +17,27 @@ function greeting() {
   return 'Good evening';
 }
 
-function weeklyStats(runs) {
-  const weekAgo = Date.now() - 7 * 86400000;
-  const week = runs.filter((r) => new Date(r.date + 'T00:00:00').getTime() >= weekAgo);
-  const miles = week.reduce((s, r) => s + r.distance, 0);
-  const seconds = week.reduce((s, r) => s + r.duration_seconds, 0);
+// Stats for runs in a rolling window [fromDaysAgo, toDaysAgo) days back.
+function windowStats(runs, fromDaysAgo, toDaysAgo) {
+  const now = Date.now();
+  const lo = now - fromDaysAgo * 86400000;
+  const hi = now - toDaysAgo * 86400000;
+  const w = runs.filter((r) => {
+    const t = new Date(r.date + 'T00:00:00').getTime();
+    return t >= lo && t < hi;
+  });
+  const miles = w.reduce((s, r) => s + r.distance, 0);
+  const seconds = w.reduce((s, r) => s + r.duration_seconds, 0);
   const avgPace = miles > 0 ? Math.round(seconds / miles) : 0;
-  return { miles, runs: week.length, seconds, avgPace };
+  return { miles, runs: w.length, seconds, avgPace };
+}
+
+// Compare current vs previous; lowerIsBetter flips which direction is "good".
+function trendOf(cur, prev, lowerIsBetter = false) {
+  if (!prev || cur === prev) return { dir: 'flat', tone: 'neutral' };
+  const up = cur > prev;
+  const good = lowerIsBetter ? !up : up;
+  return { dir: up ? 'up' : 'down', tone: good ? 'good' : 'bad' };
 }
 
 export default function Dashboard() {
@@ -39,8 +54,17 @@ export default function Dashboard() {
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
   const loading = runs === null;
-  const stats = loading ? null : weeklyStats(runs);
+  const stats = loading ? null : windowStats(runs, 7, 0);
+  const prev = loading ? null : windowStats(runs, 14, 7);
   const recent = loading ? [] : runs.slice(0, 5);
+  const lastRun = loading || !runs.length ? null : runs[0];
+
+  const trends = stats && prev ? {
+    miles: trendOf(stats.miles, prev.miles),
+    runs: trendOf(stats.runs, prev.runs),
+    pace: trendOf(stats.avgPace, prev.avgPace, true),
+    time: trendOf(stats.seconds, prev.seconds),
+  } : {};
 
   return (
     <Layout title={`${greeting()}, ${firstName} 👋`} subtitle={today}>
@@ -51,13 +75,28 @@ export default function Dashboard() {
           <StatSkeletonGrid />
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <StatCard label="Total Miles" value={stats.miles.toFixed(1)} unit="mi" accent="#00F5A0" />
-            <StatCard label="Total Runs" value={stats.runs} unit="runs" />
-            <StatCard label="Avg Pace" value={fmtPace(stats.avgPace)} unit="/mi" accent="#7B61FF" />
-            <StatCard label="Total Time" value={fmtDuration(stats.seconds)} />
+            <StatCard label="Total Miles" value={stats.miles.toFixed(1)} unit="mi" accent="#00F5A0" trend={trends.miles?.dir} trendTone={trends.miles?.tone} />
+            <StatCard label="Total Runs" value={stats.runs} unit="runs" trend={trends.runs?.dir} trendTone={trends.runs?.tone} />
+            <StatCard label="Avg Pace" value={fmtPace(stats.avgPace)} unit="/mi" accent="#7B61FF" trend={trends.pace?.dir} trendTone={trends.pace?.tone} />
+            <StatCard label="Total Time" value={fmtDuration(stats.seconds)} trend={trends.time?.dir} trendTone={trends.time?.tone} />
           </div>
         )}
       </section>
+
+      {/* Last run banner */}
+      {!loading && lastRun && (
+        <Link to={`/runs/${lastRun.id}`} className="card card-press mt-3 px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted shrink-0">Last Run</span>
+            {lastRun.weather_condition && <span title={lastRun.weather_condition}>{weatherIcon(lastRun.weather_condition)}</span>}
+          </div>
+          <div className="flex items-center gap-3 text-sm tnum shrink-0">
+            <span className="font-bold text-txt">{lastRun.distance.toFixed(2)} mi</span>
+            <span className="text-secondary font-semibold">{fmtPace(lastRun.pace_seconds)}/mi</span>
+            <span className="text-muted">{relativeDay(lastRun.date)}</span>
+          </div>
+        </Link>
+      )}
 
       {/* Goal progress */}
       {!loading && <GoalBanner goal={goal} runs={runs} />}
@@ -112,7 +151,7 @@ function GoalBanner({ goal, runs }) {
   const progress = Math.min(100, Math.max(0, Math.round(((totalWeeks - weeksLeft) / totalWeeks) * 100)));
 
   return (
-    <Link to="/coach" className="block mt-4 card p-4 border-secondary/40 shadow-glow-purple/0">
+    <Link to="/coach" className="block mt-4 card card-press p-4 border-secondary/40">
       <div className="flex items-center justify-between">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-secondary">Active Goal</p>

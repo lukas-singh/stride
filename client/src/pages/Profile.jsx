@@ -86,7 +86,7 @@ export default function Profile() {
       {goal && (
         <section className="mt-6">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Active Goal</h2>
-          <Link to="/coach" className="card p-4 block">
+          <Link to="/coach" className="card card-press p-4 block">
             <p className="font-semibold">{goal.race_distance || 'Race'}{goal.target_date ? ` · ${fmtDate(goal.target_date, { month: 'short', day: 'numeric' })}` : ''}</p>
             <p className="text-sm text-muted mt-1">{goal.raw_text}</p>
           </Link>
@@ -95,11 +95,11 @@ export default function Profile() {
 
       {/* Links */}
       <div className="mt-6 space-y-3">
-        <Link to="/recovery" className="card p-4 flex items-center justify-between active:bg-border/40">
+        <Link to="/recovery" className="card card-press p-4 flex items-center justify-between active:bg-border/40">
           <span className="font-semibold">🧘 Body & Recovery</span>
           <span className="text-muted">→</span>
         </Link>
-        <button onClick={doLogout} className="w-full card p-4 flex items-center justify-between active:bg-border/40 text-danger font-semibold">
+        <button onClick={doLogout} className="w-full card card-press p-4 flex items-center justify-between active:bg-border/40 text-danger font-semibold">
           <span>Log Out</span>
           <span>→</span>
         </button>

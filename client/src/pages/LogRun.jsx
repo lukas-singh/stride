@@ -4,6 +4,8 @@ import Layout from '../components/Layout.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { api } from '../api.js';
 import { todayISO, fmtPace, difficultyColor } from '../lib/format.js';
+import { WEATHER_OPTIONS } from '../lib/weather.js';
+import { computePersonalBests, diffPersonalBests } from '../lib/personalBests.js';
 
 const RUN_TYPES = ['Easy', 'Tempo', 'Long Run', 'Interval', 'Race', 'Recovery'];
 
@@ -21,6 +23,28 @@ function NumField({ label, value, onChange, step = '1', placeholder, unit, min }
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
+    </div>
+  );
+}
+
+function SectionLabel({ children }) {
+  return (
+    <div className="flex items-center gap-2 pt-3">
+      <span className="w-1 h-4 rounded-full bg-primary" />
+      <span className="text-xs font-bold uppercase tracking-widest text-muted">{children}</span>
+    </div>
+  );
+}
+
+// tick marks at every 0.5 (taller at integers), padded to align with the thumb travel
+function DifficultyTicks() {
+  const ticks = [];
+  for (let v = 1; v <= 10.0001; v += 0.5) ticks.push(Math.round(v * 10) / 10);
+  return (
+    <div className="flex justify-between px-3.5 mt-1.5 pointer-events-none" aria-hidden>
+      {ticks.map((v) => (
+        <span key={v} className={`w-px rounded-full ${Number.isInteger(v) ? 'h-2.5 bg-muted' : 'h-1.5 bg-border'}`} />
+      ))}
     </div>
   );
 }
@@ -43,6 +67,7 @@ export default function LogRun() {
   const [temp, setTemp] = useState(editRun ? String(editRun.temperature) : '');
   const [wind, setWind] = useState(editRun ? String(editRun.wind_speed) : '');
   const [humidity, setHumidity] = useState(editRun ? String(editRun.humidity) : '');
+  const [weather, setWeather] = useState(editRun?.weather_condition || '');
   const [difficulty, setDifficulty] = useState(editRun?.difficulty ?? 5);
   const [runType, setRunType] = useState(editRun?.run_type || 'Easy');
   const [notes, setNotes] = useState(editRun?.notes || '');
@@ -51,7 +76,6 @@ export default function LogRun() {
   const durationSeconds = (parseInt(mins, 10) || 0) * 60 + (parseInt(secs, 10) || 0);
   const dist = parseFloat(distance) || 0;
 
-  // auto pace from distance + time, unless user overrode it
   const autoPace = dist > 0 && durationSeconds > 0 ? Math.round(durationSeconds / dist) : 0;
   const pace = manualPace ?? autoPace;
 
@@ -78,6 +102,7 @@ export default function LogRun() {
       humidity: parseInt(humidity, 10) || 0,
       difficulty: Number(difficulty),
       run_type: runType,
+      weather_condition: weather,
       notes,
     };
     try {
@@ -85,8 +110,23 @@ export default function LogRun() {
         await api(`/runs/${editRun.id}`, { method: 'PUT', body: payload });
         toast.success('Run updated');
       } else {
-        await api('/runs', { method: 'POST', body: payload });
+        // capture previous bests so we can celebrate any new PRs after saving
+        let existing = [];
+        try { existing = await api('/runs'); } catch { /* offline-safe */ }
+        const prevValues = computePersonalBests(existing).values;
+
+        const saved = await api('/runs', { method: 'POST', body: payload });
         toast.success('Run saved 🏃');
+
+        try {
+          const nextValues = computePersonalBests([saved, ...existing]).values;
+          const beaten = diffPersonalBests(prevValues, nextValues);
+          if (beaten.length) {
+            // hand off to Race Vault so it can pulse the matching cards
+            localStorage.setItem('stride_new_pbs', JSON.stringify({ ids: beaten.map((b) => b.id), ts: Date.now() }));
+            beaten.forEach((b) => toast.trophy(`New Personal Best! ${b.label}`));
+          }
+        } catch { /* PB celebration is best-effort */ }
       }
       navigate('/', { replace: true });
     } catch (err) {
@@ -97,11 +137,13 @@ export default function LogRun() {
 
   return (
     <Layout title={isEdit ? 'Edit Run' : 'Log Run'}>
-      <form onSubmit={save} className="mt-2 space-y-5">
+      <form onSubmit={save} className="mt-2 space-y-4">
         <div>
           <label className="label">Date</label>
           <input className="input" type="date" value={date} max={todayISO()} onChange={(e) => setDate(e.target.value)} />
         </div>
+
+        <SectionLabel>Performance</SectionLabel>
 
         <NumField label="Distance" unit="mi" step="0.01" min="0" placeholder="3.10" value={distance} onChange={setDistance} />
 
@@ -152,10 +194,40 @@ export default function LogRun() {
           <NumField label="Elevation" unit="ft" step="1" min="0" placeholder="0" value={elevation} onChange={setElevation} />
           <NumField label="Calories" step="1" min="0" placeholder="0" value={calories} onChange={setCalories} />
           <NumField label="Avg Heart Rate" unit="bpm" step="1" min="0" placeholder="0" value={hr} onChange={setHr} />
-          <NumField label="Temperature" unit="°F" step="1" placeholder="0" value={temp} onChange={setTemp} />
-          <NumField label="Wind Speed" unit="mph" step="1" min="0" placeholder="0" value={wind} onChange={setWind} />
+        </div>
+
+        <SectionLabel>Conditions</SectionLabel>
+
+        <div className="grid grid-cols-3 gap-3">
+          <NumField label="Temp" unit="°F" step="1" placeholder="0" value={temp} onChange={setTemp} />
+          <NumField label="Wind" unit="mph" step="1" min="0" placeholder="0" value={wind} onChange={setWind} />
           <NumField label="Humidity" unit="%" step="1" min="0" placeholder="0" value={humidity} onChange={setHumidity} />
         </div>
+
+        {/* Weather condition — icon button selector */}
+        <div>
+          <label className="label">Weather Condition</label>
+          <div className="grid grid-cols-3 gap-2">
+            {WEATHER_OPTIONS.map((o) => {
+              const selected = weather === o.value;
+              return (
+                <button
+                  type="button"
+                  key={o.value}
+                  onClick={() => setWeather(selected ? '' : o.value)}
+                  className={`min-h-[64px] rounded-lg border flex flex-col items-center justify-center gap-1 transition-all duration-150 active:scale-[0.97] ${
+                    selected ? 'border-primary bg-primary/10 shadow-glow-sm' : 'border-border bg-bg'
+                  }`}
+                >
+                  <span className="text-2xl">{o.icon}</span>
+                  <span className={`text-[10px] font-medium ${selected ? 'text-primary' : 'text-muted'}`}>{o.value}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <SectionLabel>How'd it feel?</SectionLabel>
 
         {/* Difficulty slider */}
         <div>
@@ -172,9 +244,11 @@ export default function LogRun() {
             onChange={(e) => setDifficulty(parseFloat(e.target.value))}
             className="w-full"
             style={{
+              '--thumb-color': diffColor,
               background: `linear-gradient(to right, ${diffColor} 0%, ${diffColor} ${fillPct}%, #1E1E2E ${fillPct}%, #1E1E2E 100%)`,
             }}
           />
+          <DifficultyTicks />
           <div className="flex justify-between text-[10px] text-muted mt-1">
             <span>Easy</span><span>Moderate</span><span>Max</span>
           </div>

@@ -234,7 +234,7 @@ function WeekCard({ week, maxMiles }) {
   const phaseColor = week.phase === 'Peak' ? '#FF9F40' : week.phase === 'Taper' ? '#3FA9FF' : '#00F5A0';
 
   return (
-    <div className="card overflow-hidden">
+    <div className="card card-press overflow-hidden">
       <button onClick={() => setOpen((o) => !o)} className="w-full p-4 flex items-center gap-3 text-left">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">

@@ -6,6 +6,7 @@ import { CardSkeletonList } from '../components/Skeleton.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { api } from '../api.js';
 import { fmtDuration, fmtPace, fmtDate } from '../lib/format.js';
+import { weatherIcon } from '../lib/weather.js';
 
 function Stat({ label, value, unit }) {
   return (
@@ -45,7 +46,10 @@ export default function RunDetail() {
   }
 
   return (
-    <Layout title={fmtDate(run.date, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} subtitle={run.run_type}>
+    <Layout
+      title={fmtDate(run.date, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+      subtitle={run.weather_condition ? `${run.run_type} · ${weatherIcon(run.weather_condition)} ${run.weather_condition}` : run.run_type}
+    >
       {/* Hero stats */}
       <div className="card p-5 mt-2 flex items-center justify-around text-center">
         <div>

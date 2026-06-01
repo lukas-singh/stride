@@ -33,6 +33,7 @@ db.exec(`
     humidity INTEGER DEFAULT 0,
     difficulty REAL DEFAULT 5,
     run_type TEXT DEFAULT 'Easy',
+    weather_condition TEXT DEFAULT '',
     notes TEXT DEFAULT '',
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -82,5 +83,15 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 `);
+
+// --- lightweight migrations for existing databases ---
+// SQLite has no "ADD COLUMN IF NOT EXISTS", so check the schema first.
+function ensureColumn(table, column, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+  if (!cols.includes(column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+ensureColumn('runs', 'weather_condition', "TEXT DEFAULT ''");
 
 export default db;

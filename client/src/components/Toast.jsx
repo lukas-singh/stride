@@ -9,16 +9,17 @@ export function ToastProvider({ children }) {
     setToasts((t) => t.filter((x) => x.id !== id));
   }, []);
 
-  const push = useCallback((message, type = 'success') => {
+  const push = useCallback((message, type = 'success', duration = 3200) => {
     const id = Math.random().toString(36).slice(2);
     setToasts((t) => [...t, { id, message, type }]);
-    setTimeout(() => dismiss(id), 3200);
+    setTimeout(() => dismiss(id), duration);
   }, [dismiss]);
 
   const toast = {
     success: (m) => push(m, 'success'),
     error: (m) => push(m, 'error'),
     info: (m) => push(m, 'info'),
+    trophy: (m) => push(m, 'trophy', 4000),
   };
 
   return (
@@ -34,11 +35,13 @@ export function ToastProvider({ children }) {
                 ? 'border-primary/50 text-primary'
                 : t.type === 'error'
                 ? 'border-danger/50 text-danger'
+                : t.type === 'trophy'
+                ? 'border-primary text-primary shadow-glow'
                 : 'border-secondary/50 text-secondary'
             }`}
           >
-            <span>{t.type === 'success' ? '✓' : t.type === 'error' ? '✕' : 'ℹ'}</span>
-            <span className="text-txt">{t.message}</span>
+            <span>{t.type === 'success' ? '✓' : t.type === 'error' ? '✕' : t.type === 'trophy' ? '🏆' : 'ℹ'}</span>
+            <span className={t.type === 'trophy' ? 'text-primary font-semibold' : 'text-txt'}>{t.message}</span>
           </div>
         ))}
       </div>

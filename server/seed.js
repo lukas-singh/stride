@@ -24,8 +24,10 @@ export function seedDemo() {
   const userId = info.lastInsertRowid;
 
   const insertRun = db.prepare(`INSERT INTO runs
-    (user_id, date, distance, duration_seconds, pace_seconds, elevation_gain, calories, avg_hr, temperature, wind_speed, humidity, difficulty, run_type, notes)
-    VALUES (@user_id, @date, @distance, @duration_seconds, @pace_seconds, @elevation_gain, @calories, @avg_hr, @temperature, @wind_speed, @humidity, @difficulty, @run_type, @notes)`);
+    (user_id, date, distance, duration_seconds, pace_seconds, elevation_gain, calories, avg_hr, temperature, wind_speed, humidity, difficulty, run_type, weather_condition, notes)
+    VALUES (@user_id, @date, @distance, @duration_seconds, @pace_seconds, @elevation_gain, @calories, @avg_hr, @temperature, @wind_speed, @humidity, @difficulty, @run_type, @weather_condition, @notes)`);
+
+  const WEATHERS = ['Sunny', 'Sunny', 'Partly Cloudy', 'Cloudy', 'Rainy', 'Stormy', 'Snowy'];
 
   const today = new Date();
   // Generate ~22 runs over the last 30 days (rest days mixed in). Slight pace
@@ -62,6 +64,14 @@ export function seedDemo() {
       : type === 'Long Run' ? rand(5, 7.5)
       : rand(2.5, 5);
 
+    const temperature = randInt(42, 78);
+    const humidity = randInt(35, 85);
+    // weather loosely correlated with the conditions for realism
+    let weather;
+    if (temperature < 45) weather = Math.random() > 0.5 ? 'Snowy' : 'Cloudy';
+    else if (humidity > 75) weather = Math.random() > 0.5 ? 'Rainy' : 'Stormy';
+    else weather = WEATHERS[randInt(0, WEATHERS.length - 1)];
+
     insertRun.run({
       user_id: userId,
       date: isoDate(d),
@@ -71,11 +81,12 @@ export function seedDemo() {
       elevation_gain: type === 'Long Run' ? randInt(150, 600) : randInt(0, 250),
       calories: Math.round(distance * randInt(95, 120)),
       avg_hr: type === 'Interval' ? randInt(165, 182) : type === 'Recovery' ? randInt(125, 145) : randInt(145, 168),
-      temperature: randInt(42, 78),
+      temperature,
       wind_speed: randInt(0, 18),
-      humidity: randInt(35, 85),
+      humidity,
       difficulty: +(Math.round(difficulty * 2) / 2).toFixed(1),
       run_type: type,
+      weather_condition: weather,
       notes: ''
     });
   }

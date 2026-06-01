@@ -19,6 +19,30 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* very slow, barely-there purple/green gradient drift for depth */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(55% 45% at 18% 8%, rgba(123, 97, 255, 0.12), transparent 60%),
+    radial-gradient(50% 45% at 85% 92%, rgba(0, 245, 160, 0.10), transparent 60%);
+  background-size: 200% 200%;
+  background-repeat: no-repeat;
+  animation: bgDrift 40s ease-in-out infinite alternate;
+}
+
+@keyframes bgDrift {
+  0% { background-position: 0% 0%, 100% 100%; }
+  100% { background-position: 40% 25%, 60% 75%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+}
+
 /* tabular numbers for stats */
 .tnum {
   font-variant-numeric: tabular-nums;
@@ -46,6 +70,10 @@ input[type='date']::-webkit-calendar-picker-indicator {
 @layer components {
   .card {
     @apply bg-surface border border-border rounded-card;
+  }
+  /* satisfying press feedback for tappable cards (not form/modal containers) */
+  .card-press {
+    @apply transition-transform duration-150 ease-smooth active:scale-[0.97];
   }
   .input {
     @apply w-full bg-bg border border-border rounded-lg px-4 text-txt placeholder-muted
@@ -84,17 +112,18 @@ input[type='range']::-webkit-slider-thumb {
   height: 28px;
   border-radius: 50%;
   background: #F0F0F5;
-  border: 3px solid #00F5A0;
-  box-shadow: 0 0 10px rgba(0, 245, 160, 0.6);
+  border: 3px solid var(--thumb-color, #00F5A0);
+  box-shadow: 0 0 12px var(--thumb-color, #00F5A0);
   cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 input[type='range']::-moz-range-thumb {
   width: 28px;
   height: 28px;
   border-radius: 50%;
   background: #F0F0F5;
-  border: 3px solid #00F5A0;
-  box-shadow: 0 0 10px rgba(0, 245, 160, 0.6);
+  border: 3px solid var(--thumb-color, #00F5A0);
+  box-shadow: 0 0 12px var(--thumb-color, #00F5A0);
   cursor: pointer;
 }
 
@@ -115,4 +144,54 @@ input[type='range']::-moz-range-thumb {
   background: linear-gradient(90deg, #13131A 25%, #1E1E2E 50%, #13131A 75%);
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite linear;
+}
+
+/* new personal-best highlight — neon pulse for ~3s */
+@keyframes pbPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(0, 245, 160, 0); border-color: #1E1E2E; }
+  50% { box-shadow: 0 0 20px rgba(0, 245, 160, 0.65); border-color: #00F5A0; }
+}
+.pb-pulse { animation: pbPulse 1s ease-in-out 3; }
+
+/* unlocked milestone badge sheen */
+@keyframes badgeShimmer {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(260%) skewX(-20deg); }
+}
+.badge-shimmer { position: relative; overflow: hidden; }
+.badge-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(0, 245, 160, 0.22), transparent);
+  animation: badgeShimmer 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* horizontal scroll strip + right-edge fade hint */
+.hscroll {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+.hscroll > * { scroll-snap-align: start; flex: 0 0 auto; }
+.fade-right { position: relative; }
+.fade-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 36px;
+  background: linear-gradient(to right, transparent, #0A0A0F);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-pulse, .badge-shimmer::after { animation: none; }
 }

@@ -5,9 +5,19 @@ import { CardSkeletonList } from '../components/Skeleton.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { api } from '../api.js';
 import { fmtDate, parseTimeToSeconds, todayISO } from '../lib/format.js';
-import { computePRs, markPRs, computeStreak, computeBadges, RACE_MEDALS, DIST_ORDER } from '../lib/achievements.js';
+import { computePRs, markPRs, computeBadges, RACE_MEDALS, DIST_ORDER } from '../lib/achievements.js';
+import { computePersonalBests } from '../lib/personalBests.js';
 
 const RACE_DISTANCE_OPTS = ['5K', '10K', 'Half Marathon', 'Marathon', 'Other'];
+
+function SectionHeader({ children }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-1 h-4 rounded-full bg-primary shadow-glow-sm" />
+      <h2 className="text-xs font-bold uppercase tracking-widest text-muted">{children}</h2>
+    </div>
+  );
+}
 
 export default function RaceVault() {
   const toast = useToast();
@@ -15,6 +25,7 @@ export default function RaceVault() {
   const [runs, setRuns] = useState([]);
   const [hasGoal, setHasGoal] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [newPbIds, setNewPbIds] = useState([]);
 
   function reload() {
     api('/races').then(setRaces).catch(() => setRaces([]));
@@ -25,10 +36,25 @@ export default function RaceVault() {
     api('/goals').then((g) => setHasGoal(!!g)).catch(() => setHasGoal(false));
   }, []);
 
+  // Pick up any personal bests broken on the Log Run page and pulse them.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('stride_new_pbs');
+      if (!raw) return;
+      localStorage.removeItem('stride_new_pbs');
+      const { ids, ts } = JSON.parse(raw);
+      if (Array.isArray(ids) && ids.length && Date.now() - ts < 5 * 60 * 1000) {
+        setNewPbIds(ids);
+        const t = setTimeout(() => setNewPbIds([]), 3500);
+        return () => clearTimeout(t);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   const loading = races === null;
   const prs = useMemo(() => (races ? computePRs(races) : {}), [races]);
   const marked = useMemo(() => (races ? markPRs(races) : []), [races]);
-  const streak = useMemo(() => computeStreak(runs), [runs]);
+  const pb = useMemo(() => computePersonalBests(runs), [runs]);
   const badges = useMemo(() => computeBadges({ runs, races: races || [], hasGoal }), [runs, races, hasGoal]);
 
   async function deleteRace(id) {
@@ -43,21 +69,37 @@ export default function RaceVault() {
 
   return (
     <Layout title="Race Vault 🏆">
-      {/* Streak */}
-      <div className="card p-4 mt-2 flex items-center justify-between border-danger/30">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Current Streak</p>
-          <p className="text-3xl font-extrabold tnum mt-1 text-danger">{streak.days} <span className="text-base text-muted font-medium">days</span></p>
-        </div>
-        <span className="text-4xl">🔥</span>
-      </div>
+      {/* Add Race — full-width button at top */}
+      <button onClick={() => setShowModal(true)} className="btn-primary mt-2">+ Add Race</button>
 
-      {/* PR Board */}
-      <section className="mt-5">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">PR Board</h2>
-        <div className="grid grid-cols-2 gap-3">
+      {/* Personal Bests — auto-computed from logged runs; hidden when no runs */}
+      {pb.cards.length > 0 && (
+        <section className="mt-6">
+          <SectionHeader>Personal Bests</SectionHeader>
+          <div className="grid grid-cols-2 gap-3 mt-2">
+            {pb.cards.map((c) => (
+              <div
+                key={c.id}
+                className={`card p-3 border-l-[3px] border-l-primary ${newPbIds.includes(c.id) ? 'pb-pulse' : ''}`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg shrink-0">{c.icon}</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted truncate">{c.label}</span>
+                </div>
+                <p className="text-xl font-bold tnum mt-1 text-txt">{c.value}</p>
+                {c.sub && <p className="text-[11px] text-muted mt-0.5 truncate">{c.sub}</p>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Race PRs (from logged races) */}
+      <section className="mt-6">
+        <SectionHeader>Race PRs</SectionHeader>
+        <div className="grid grid-cols-2 gap-3 mt-2">
           {DIST_ORDER.map((d) => (
-            <div key={d} className="card p-3">
+            <div key={d} className="card p-3 border-l-[3px] border-l-primary">
               <div className="flex items-center gap-1.5">
                 <span>{RACE_MEDALS[d]}</span>
                 <span className="text-xs font-semibold text-muted">{d}</span>
@@ -68,32 +110,33 @@ export default function RaceVault() {
         </div>
       </section>
 
-      {/* Races */}
+      {/* Your Races — horizontal scrollable strip */}
       <section className="mt-6">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Race History</h2>
-          <button onClick={() => setShowModal(true)} className="text-xs text-primary font-semibold">+ Add Race</button>
-        </div>
+        <SectionHeader>Your Races</SectionHeader>
         {loading ? (
-          <CardSkeletonList count={2} />
+          <div className="mt-2"><CardSkeletonList count={1} height="h-[120px]" /></div>
         ) : marked.length === 0 ? (
-          <EmptyState icon="🏁" title="No races yet" message="Add your race results to build your trophy case." ctaLabel="Add a Race" onCta={() => setShowModal(true)} />
+          <div className="mt-2">
+            <EmptyState icon="🏁" title="No races yet" message="Add your race results to build your trophy case." ctaLabel="Add a Race" onCta={() => setShowModal(true)} />
+          </div>
         ) : (
-          <div className="space-y-3">
-            {marked.map((r) => <RaceCard key={r.id} race={r} onDelete={deleteRace} />)}
+          <div className="fade-right mt-2">
+            <div className="hscroll">
+              {marked.map((r) => <RaceStripCard key={r.id} race={r} onDelete={deleteRace} />)}
+            </div>
           </div>
         )}
       </section>
 
-      {/* Badges */}
+      {/* Milestone Badges */}
       <section className="mt-6">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Milestone Badges</h2>
-        <div className="grid grid-cols-3 gap-3">
+        <SectionHeader>Milestone Badges</SectionHeader>
+        <div className="grid grid-cols-3 gap-3 mt-2">
           {badges.map((b) => (
             <div
               key={b.title}
               className={`card p-3 text-center transition-all duration-200 ${
-                b.unlocked ? 'border-primary/50 shadow-glow-sm' : 'opacity-40 grayscale'
+                b.unlocked ? 'border-primary/50 shadow-glow-sm badge-shimmer' : 'opacity-40 grayscale'
               }`}
             >
               <div className="text-3xl">{b.icon}</div>
@@ -109,32 +152,26 @@ export default function RaceVault() {
   );
 }
 
-function RaceCard({ race, onDelete }) {
+function RaceStripCard({ race, onDelete }) {
   const [confirm, setConfirm] = useState(false);
   const medal = RACE_MEDALS[race.distance] || '⭐';
   return (
-    <div className="card p-4">
-      <div className="flex items-start gap-3">
-        <span className="text-3xl">{medal}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold truncate">{race.name}</span>
-            {race.isPR && <span className="chip bg-primary/15 text-primary text-[10px] py-0.5">PR</span>}
-          </div>
-          <p className="text-xs text-muted mt-0.5">{race.distance} · {fmtDate(race.date, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-          <p className="text-2xl font-bold tnum mt-1 text-primary">{race.official_time}</p>
-          {race.placement && <p className="text-xs text-muted mt-0.5">Place: {race.placement}</p>}
-          {race.notes && <p className="text-xs text-txt mt-1">{race.notes}</p>}
-        </div>
-        {confirm ? (
-          <button onClick={() => onDelete(race.id)} className="text-danger text-xs font-semibold">Confirm</button>
-        ) : (
-          <button onClick={() => setConfirm(true)} className="text-muted text-xs">✕</button>
-        )}
+    <div className="card card-press p-3 w-[160px] h-[120px] flex flex-col justify-between relative">
+      <button
+        onClick={() => (confirm ? onDelete(race.id) : setConfirm(true))}
+        className={`absolute top-1.5 right-1.5 text-[10px] font-semibold z-10 ${confirm ? 'text-danger' : 'text-muted'}`}
+      >
+        {confirm ? 'Delete?' : '✕'}
+      </button>
+      <div className="flex items-center gap-2">
+        <span className="text-2xl">{medal}</span>
+        {race.isPR && <span className="chip bg-primary/15 text-primary text-[9px] py-0">PR</span>}
       </div>
-      {race.photo_url && (
-        <img src={race.photo_url} alt={race.name} className="mt-3 rounded-lg w-full max-h-48 object-cover" onError={(e) => (e.target.style.display = 'none')} />
-      )}
+      <div className="min-w-0">
+        <p className="font-semibold text-sm truncate">{race.name}</p>
+        <p className="text-[10px] text-muted">{race.distance} · {fmtDate(race.date, { month: 'short', day: 'numeric' })}</p>
+        <p className="text-lg font-bold tnum text-primary leading-tight">{race.official_time}</p>
+      </div>
     </div>
   );
 }

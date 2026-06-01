@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { fmtDuration, fmtPace, relativeDay } from '../lib/format.js';
+import { weatherIcon } from '../lib/weather.js';
 import DifficultyBadge from './DifficultyBadge.jsx';
 
 const TYPE_COLORS = {
@@ -16,7 +17,7 @@ export default function RunCard({ run }) {
   return (
     <Link
       to={`/runs/${run.id}`}
-      className="card p-4 flex items-center gap-3 active:bg-border/40 transition-colors duration-150"
+      className="card card-press p-4 flex items-center gap-3 active:bg-border/40"
     >
       <div
         className="w-1 self-stretch rounded-full shrink-0"
@@ -24,7 +25,10 @@ export default function RunCard({ run }) {
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-semibold text-txt">{run.distance.toFixed(2)} mi</span>
+          <span className="font-semibold text-txt flex items-center gap-1.5">
+            {run.distance.toFixed(2)} mi
+            {run.weather_condition && <span className="text-sm" title={run.weather_condition}>{weatherIcon(run.weather_condition)}</span>}
+          </span>
           <span className="text-xs text-muted">{relativeDay(run.date)}</span>
         </div>
         <div className="mt-1 flex items-center gap-3 text-sm text-muted tnum">
