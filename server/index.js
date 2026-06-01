@@ -29,7 +29,7 @@ async function start() {
     const { default: cors } = await import('cors');
     const { default: bcrypt } = await import('bcryptjs');
     const { default: db } = await import('./db.js');
-    const { signToken, authMiddleware } = await import('./auth.js');
+    const { signToken, authMiddleware, JWT_SECRET_FP, JWT_SECRET_SOURCE } = await import('./auth.js');
     const { seedDemo } = await import('./seed.js');
 
     try {
@@ -42,6 +42,18 @@ async function start() {
     const app = express();
     app.use(cors());
     app.use(express.json({ limit: '2mb' }));
+
+    // The client prefixes every request with "/api". In dev the Vite proxy
+    // strips that prefix; in production there is no proxy, so we normalize it
+    // here. Without this, "/api/auth/login" never matches the "/auth/login"
+    // route and instead falls through to the catch-all authMiddleware below,
+    // which 401s the (token-less) login request — surfacing on the client as
+    // "Session expired. Please log in again." for every login and signup.
+    app.use((req, res, next) => {
+      if (req.url === '/api') req.url = '/';
+      else if (req.url.startsWith('/api/')) req.url = req.url.slice(4);
+      next();
+    });
 
     app.get('/health', (req, res) => res.json({ ok: true }));
 
@@ -57,6 +69,7 @@ async function start() {
       const info = db.prepare('INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)')
         .run(email.toLowerCase(), hash, name);
       const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
+      console.log(`[stride] /auth/signup signing token (secret source=${JWT_SECRET_SOURCE} fingerprint=${JWT_SECRET_FP})`);
       res.json({ token: signToken(user), user: publicUser(user) });
     });
 
@@ -67,6 +80,7 @@ async function start() {
       if (!user || !bcrypt.compareSync(password, user.password_hash)) {
         return res.status(401).json({ error: 'Invalid email or password' });
       }
+      console.log(`[stride] /auth/login signing token (secret source=${JWT_SECRET_SOURCE} fingerprint=${JWT_SECRET_FP})`);
       res.json({ token: signToken(user), user: publicUser(user) });
     });
 

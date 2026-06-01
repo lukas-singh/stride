@@ -48,7 +48,10 @@ export async function api(path, { method = 'GET', body } = {}) {
     throw new Error('Network unavailable. Showing cached data where possible.');
   }
 
-  if (res.status === 401) {
+  // A 401 from the auth endpoints means bad credentials, not an expired
+  // session — let the real server message ("Invalid email or password")
+  // surface instead of forcing a logout.
+  if (res.status === 401 && !path.startsWith('/auth/')) {
     setToken(null);
     window.dispatchEvent(new Event('stride:logout'));
     throw new Error('Session expired. Please log in again.');

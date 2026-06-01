@@ -1,6 +1,14 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 export const JWT_SECRET = process.env.JWT_SECRET || 'stride-dev-secret-change-in-prod';
+
+// Safe, non-reversible fingerprint so we can confirm the SAME secret is used to
+// sign and verify without printing the secret itself into deploy logs.
+export const JWT_SECRET_SOURCE = process.env.JWT_SECRET ? 'env:JWT_SECRET' : 'fallback-default';
+export const JWT_SECRET_FP = crypto.createHash('sha256').update(JWT_SECRET).digest('hex').slice(0, 12);
+
+console.log(`[stride] JWT secret loaded — source=${JWT_SECRET_SOURCE} length=${JWT_SECRET.length} fingerprint=${JWT_SECRET_FP}`);
 
 export function signToken(user) {
   return jwt.sign(
