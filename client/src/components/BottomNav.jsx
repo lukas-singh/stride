@@ -4,7 +4,7 @@ const tabs = [
   { to: '/', icon: '🏠', label: 'Home', end: true },
   { to: '/coach', icon: '🤖', label: 'Coach' },
   { to: '/analytics', icon: '📊', label: 'Stats' },
-  { to: '/vault', icon: '🏆', label: 'Vault' },
+  { to: '/recovery', icon: '💤', label: 'Recovery' },
 ];
 
 function Tab({ tab }) {

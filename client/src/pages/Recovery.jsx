@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import Layout from '../components/Layout.jsx';
 import { CardSkeletonList } from '../components/Skeleton.jsx';
@@ -56,7 +55,6 @@ function readiness(score) {
 
 export default function Recovery() {
   const toast = useToast();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const baseline = user?.resting_hr_baseline || 60;
 
@@ -166,6 +164,7 @@ export default function Recovery() {
           <div>
             <label className="label">Resting HR (bpm) · baseline {baseline}</label>
             <input className="input tnum" type="number" inputMode="numeric" value={rhr} onChange={(e) => setRhr(parseInt(e.target.value, 10) || 0)} />
+            <p className="text-[11px] text-muted mt-1">Best measured first thing in the morning before getting out of bed</p>
           </div>
           <SliderRow label="Soreness" value={soreness} min={1} max={10} step={1} unit="/10" onChange={setSoreness} />
           {/* Mood emoji */}
@@ -227,8 +226,6 @@ export default function Recovery() {
           </>
         )}
       </div>
-
-      <button onClick={() => navigate('/profile')} className="btn-ghost w-full mt-4">← Back to Profile</button>
     </Layout>
   );
 }

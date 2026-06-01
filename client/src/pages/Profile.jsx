@@ -95,8 +95,8 @@ export default function Profile() {
 
       {/* Links */}
       <div className="mt-6 space-y-3">
-        <Link to="/recovery" className="card card-press p-4 flex items-center justify-between active:bg-border/40">
-          <span className="font-semibold">🧘 Body & Recovery</span>
+        <Link to="/vault" className="card card-press p-4 flex items-center justify-between active:bg-border/40">
+          <span className="font-semibold">🏆 Race Vault</span>
           <span className="text-muted">→</span>
         </Link>
         <button onClick={doLogout} className="w-full card card-press p-4 flex items-center justify-between active:bg-border/40 text-danger font-semibold">
