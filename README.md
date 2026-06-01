@@ -86,6 +86,21 @@ GET    /analytics/summary
 GET/PUT /me
 ```
 
+## Deployment (Railway / any PaaS)
+
+- The API binds to `process.env.PORT` on `0.0.0.0` (Railway injects `PORT`).
+- `server/index.js` registers `uncaughtException` / `unhandledRejection`
+  handlers and loads its modules via guarded dynamic `import()`, so any
+  **startup crash is logged with `console.error`** (including a failure to load
+  the native `better-sqlite3` binding) instead of exiting silently.
+- **`better-sqlite3` is pinned to `^12.10.0`** — its `engines` field is
+  `20.x || 22.x || 23.x || 24.x …`, so it ships a **prebuilt binary for Node 22**
+  (Railway) *and* Node 24 (local dev). Downgrading to `11.x` would lose the
+  Node 24 prebuild with no benefit on Node 22, so it was intentionally kept.
+- SQLite writes to `server/stride.db`. On Railway this lives on the container's
+  **ephemeral** filesystem (resets on redeploy) — mount a Volume and point the
+  DB path at it if you need persistence.
+
 ## Notes
 
 - **Offline-capable viewing:** successful `GET` responses are cached in
