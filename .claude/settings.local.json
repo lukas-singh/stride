@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm *)",
+      "PowerShell(Stop-Process *)",
+      "Bash(cat)",
+      "Bash(node /tmp/coachtest.mjs)",
+      "Bash(node coachtest.mjs)",
+      "Bash(npm run *)"
+    ]
+  }
+}

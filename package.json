@@ -1,0 +1,12 @@
+{
+  "name": "stride",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Stride — mobile-first run tracking & coaching app",
+  "scripts": {
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "server": "npm --prefix server start",
+    "client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build"
+  }
+}
