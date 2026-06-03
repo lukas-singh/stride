@@ -6,7 +6,9 @@
       "Bash(cat)",
       "Bash(node /tmp/coachtest.mjs)",
       "Bash(node coachtest.mjs)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(node _tl.mjs)",
+      "Bash(rm _tl.mjs)"
     ]
   }
 }
