@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import MeshBackground from './components/MeshBackground.jsx';
 import Auth from './pages/Auth.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import LogRun from './pages/LogRun.jsx';
@@ -17,6 +18,8 @@ function protect(el) {
 
 export default function App() {
   return (
+    <>
+    <MeshBackground />
     <Routes>
       <Route path="/login" element={<Auth />} />
       <Route path="/" element={protect(<Dashboard />)} />
@@ -30,5 +33,6 @@ export default function App() {
       <Route path="/profile" element={protect(<Profile />)} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }

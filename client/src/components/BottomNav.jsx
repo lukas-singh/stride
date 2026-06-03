@@ -3,11 +3,11 @@ import { NavLink, useNavigate } from 'react-router-dom';
 // Five tabs + the center Log Run FAB. Icon-only on mobile so it stays
 // uncrowded at 375px (labels like "Achievements" wouldn't fit cleanly).
 const tabs = [
-  { to: '/', icon: '🏠', label: 'Home', end: true },
-  { to: '/coach', icon: '🤖', label: 'Coach' },
-  { to: '/analytics', icon: '📊', label: 'Stats' },
-  { to: '/recovery', icon: '💤', label: 'Recovery' },
-  { to: '/achievements', icon: '🏆', label: 'Achievements' },
+  { to: '/', icon: '🏠', label: 'Home', end: true, anim: 'anim-bounce' },
+  { to: '/coach', icon: '🤖', label: 'Coach', anim: 'anim-spin' },
+  { to: '/analytics', icon: '📊', label: 'Stats', anim: 'anim-flip' },
+  { to: '/recovery', icon: '💤', label: 'Recovery', anim: 'anim-pulse' },
+  { to: '/achievements', icon: '🏆', label: 'Achievements', anim: 'anim-shake' },
 ];
 
 function Tab({ tab }) {
@@ -22,15 +22,15 @@ function Tab({ tab }) {
       {({ isActive }) => (
         <>
           <span
-            className={`text-2xl transition-transform duration-150 ${isActive ? 'scale-110' : 'opacity-60'}`}
-            style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(0,245,160,0.7))' } : undefined}
+            className={`text-2xl transition-transform duration-150 ${isActive ? `scale-110 ${tab.anim}` : 'opacity-60'}`}
+            style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(255,107,43,0.75))' } : undefined}
           >
             {tab.icon}
           </span>
-          {/* active dot indicator (with glow) */}
+          {/* active dot indicator (with glow + bounce) */}
           <span
             className={`w-1.5 h-1.5 rounded-full transition-all duration-150 ${
-              isActive ? 'bg-primary shadow-glow scale-100' : 'bg-transparent scale-0'
+              isActive ? 'bg-primary shadow-glow scale-100 dot-bounce' : 'bg-transparent scale-0'
             }`}
           />
         </>

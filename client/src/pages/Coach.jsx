@@ -9,7 +9,7 @@ import { runCoach } from '../lib/coachEngine.js';
 import { fmtDuration, fmtPace } from '../lib/format.js';
 
 const WORKOUT_COLORS = {
-  Easy: '#00F5A0',
+  Easy: '#00C46A',
   Tempo: '#7B61FF',
   'Long Run': '#3FA9FF',
   Interval: '#FF9F40',
@@ -17,7 +17,7 @@ const WORKOUT_COLORS = {
   Rest: '#3A3A4A',
 };
 
-const CONFIDENCE_COLORS = { Low: '#FF4D6D', Medium: '#FFD23F', High: '#00F5A0' };
+const CONFIDENCE_COLORS = { Low: '#FF4D6D', Medium: '#FFD23F', High: '#FF6B2B' };
 
 export default function Coach() {
   const toast = useToast();
@@ -149,9 +149,9 @@ function CoachResult({ result }) {
     <div className="space-y-6 mt-5">
       {/* Predicted race time */}
       <section>
-        <div className="card p-5 text-center border-primary/30">
+        <div className="card card-accent p-5 text-center">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Predicted Finish</p>
-          <p className="text-5xl font-extrabold tnum text-primary mt-2 drop-shadow-[0_0_12px_rgba(0,245,160,0.4)]">
+          <p className="font-display text-5xl font-extrabold tnum text-primary mt-2 drop-shadow-[0_0_12px_rgba(255,107,43,0.45)]">
             {fmtDuration(prediction.predictedSeconds)}
           </p>
           <div className="flex items-center justify-center gap-3 mt-3">
@@ -220,7 +220,7 @@ function Mini({ label, value }) {
 function DeltaBadge({ delta }) {
   if (Math.abs(delta) < 5) return <span className="chip bg-primary/15 text-primary">On target 🎯</span>;
   const slower = delta > 0;
-  const color = slower ? '#FF4D6D' : '#00F5A0';
+  const color = slower ? '#FF4D6D' : '#00C46A';
   return (
     <span className="chip tnum" style={{ color, backgroundColor: `${color}1A` }}>
       {slower ? '▲' : '▼'} {fmtDuration(Math.abs(delta))} {slower ? 'over' : 'under'} goal
@@ -231,7 +231,7 @@ function DeltaBadge({ delta }) {
 function WeekCard({ week, maxMiles }) {
   const [open, setOpen] = useState(false);
   const pct = maxMiles > 0 ? (week.totalMiles / maxMiles) * 100 : 0;
-  const phaseColor = week.phase === 'Peak' ? '#FF9F40' : week.phase === 'Taper' ? '#3FA9FF' : '#00F5A0';
+  const phaseColor = week.phase === 'Peak' ? '#FF9F40' : week.phase === 'Taper' ? '#3FA9FF' : '#00C46A';
 
   return (
     <div className="card card-press overflow-hidden">

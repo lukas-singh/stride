@@ -103,6 +103,17 @@ export const ACHIEVEMENT_CATEGORIES = [
 const DAY_MS = 86400000;
 const RACE_MI = { '5K': 3.107, '10K': 6.214, 'Half': 13.109, 'Full': 26.219 };
 
+const RARITY_LEGENDARY = new Set(['1000-mile-legend', '100-run-legend', 'marathon-distance', 'ultra-warrior', 'everest-mode', '30-day-beast', 'fastest-full', 'everest-pacer', 'all-weather-champion']);
+const RARITY_EPIC = new Set(['century-runner', '500-mile-club', 'half-century', 'fastest-half', 'two-week-grind', 'mountain-goat', 'summit-seeker', 'half-marathon-distance', 'speed-demon', 'monthly-miler', 'improvement-arc', 'coldest-run', 'hottest-run', 'heart-rate-hero']);
+const RARITY_RARE = new Set(['50-mile-club', '25-run-club', 'week-warrior', 'double-digits', 'hill-climber', 'sub-8-runner', 'fastest-10k', 'calorie-crusher', 'iron-will', 'storm-chaser', 'snow-warrior', 'humidity-hero', 'wind-fighter', 'perfect-conditions', '5-runs-in-a-week', 'holiday-runner', 'comeback-kid', 'distance-collector', 'note-taker']);
+
+function rarityFor(id) {
+  if (RARITY_LEGENDARY.has(id)) return 'Legendary';
+  if (RARITY_EPIC.has(id)) return 'Epic';
+  if (RARITY_RARE.has(id)) return 'Rare';
+  return 'Common';
+}
+
 function ld(s) { return new Date(s + 'T00:00:00'); }
 function localISO(d) {
   const off = d.getTimezoneOffset();
@@ -234,6 +245,7 @@ export function computeAchievements(runsInput) {
   const out = [];
   const add = (category, icon, name, desc, unlocked, opts = {}) => out.push({
     id: slug(name), category, icon, name, desc,
+    rarity: rarityFor(slug(name)),
     unlocked: !!unlocked,
     current: opts.current != null ? opts.current : (unlocked ? 1 : 0),
     target: opts.target != null ? opts.target : 1,

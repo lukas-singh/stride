@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
 import { fmtDuration, fmtPace, fmtDate, relativeDay } from '../lib/format.js';
 import { weatherIcon } from '../lib/weather.js';
+import useCountUp from '../hooks/useCountUp.js';
 
 function greeting() {
   const h = new Date().getHours();
@@ -66,6 +67,10 @@ export default function Dashboard() {
     time: trendOf(stats.seconds, prev.seconds),
   } : {};
 
+  // count-up animation for the headline numbers
+  const milesCount = useCountUp(stats ? stats.miles : 0, 600);
+  const runsCount = useCountUp(stats ? stats.runs : 0, 600);
+
   return (
     <Layout title={`${greeting()}, ${firstName} 👋`} subtitle={today}>
       {/* Weekly summary */}
@@ -75,8 +80,8 @@ export default function Dashboard() {
           <StatSkeletonGrid />
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <StatCard label="Total Miles" value={stats.miles.toFixed(1)} unit="mi" accent="#00F5A0" trend={trends.miles?.dir} trendTone={trends.miles?.tone} />
-            <StatCard label="Total Runs" value={stats.runs} unit="runs" trend={trends.runs?.dir} trendTone={trends.runs?.tone} />
+            <StatCard label="Total Miles" value={milesCount.toFixed(1)} unit="mi" accent="#FF6B2B" trend={trends.miles?.dir} trendTone={trends.miles?.tone} />
+            <StatCard label="Total Runs" value={Math.round(runsCount)} unit="runs" trend={trends.runs?.dir} trendTone={trends.runs?.tone} />
             <StatCard label="Avg Pace" value={fmtPace(stats.avgPace)} unit="/mi" accent="#7B61FF" trend={trends.pace?.dir} trendTone={trends.pace?.tone} />
             <StatCard label="Total Time" value={fmtDuration(stats.seconds)} trend={trends.time?.dir} trendTone={trends.time?.tone} />
           </div>

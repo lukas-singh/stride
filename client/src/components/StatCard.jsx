@@ -2,7 +2,7 @@ const TREND_GLYPH = { up: '↑', down: '↓', flat: '→' };
 
 function TrendArrow({ trend, tone = 'neutral' }) {
   if (!trend) return null;
-  const color = tone === 'good' ? '#00F5A0' : tone === 'bad' ? '#FF4D6D' : '#6B6B80';
+  const color = tone === 'good' ? '#00C46A' : tone === 'bad' ? '#FF4D6D' : '#6B6B80';
   return (
     <span className="text-sm font-bold leading-none tnum" style={{ color }} aria-hidden>
       {TREND_GLYPH[trend] || ''}
@@ -18,7 +18,7 @@ export default function StatCard({ label, value, unit, accent, trend, trendTone 
         <TrendArrow trend={trend} tone={trendTone} />
       </div>
       <div className="mt-2 flex items-baseline gap-1">
-        <span className="text-2xl font-bold tnum" style={accent ? { color: accent } : undefined}>
+        <span className="font-display text-2xl font-bold tnum tracking-tight" style={accent ? { color: accent } : undefined}>
           {value}
         </span>
         {unit && <span className="text-xs text-muted font-medium">{unit}</span>}

@@ -56,7 +56,7 @@ export function todayISO() {
 }
 
 export function difficultyColor(d) {
-  if (d <= 4) return '#00F5A0';
+  if (d <= 4) return '#00C46A';
   if (d <= 7) return '#FFD23F';
   return '#FF4D6D';
 }

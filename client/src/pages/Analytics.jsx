@@ -113,7 +113,7 @@ export default function Analytics() {
               <XAxis dataKey="week" tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} />
               <YAxis tick={AXIS} tickLine={false} axisLine={false} width={28} />
               <Tooltip content={<DarkTooltip valueFmt={(v) => `${v} mi`} />} />
-              <Line type="monotone" dataKey="miles" name="Miles" stroke="#00F5A0" strokeWidth={2.5} dot={{ r: 3, fill: '#00F5A0' }} activeDot={{ r: 5 }} />
+              <Line type="monotone" dataKey="miles" name="Miles" stroke="#FF6B2B" strokeWidth={2.5} dot={{ r: 3, fill: '#FF6B2B' }} activeDot={{ r: 5 }} />
             </LineChart>
           </ChartCard>
 
@@ -125,7 +125,7 @@ export default function Analytics() {
               <YAxis tickFormatter={paceTickFmt} reversed domain={['dataMin - 15', 'dataMax + 15']} tick={AXIS} tickLine={false} axisLine={false} width={42} />
               <Tooltip content={<DarkTooltip valueFmt={(v) => `${fmtPace(v)}/mi`} />} />
               <Line type="monotone" dataKey="pace" name="Pace" stroke="#7B61FF" strokeWidth={2.5} dot={false} />
-              <Line dataKey="pb" name="PB" stroke="#00F5A0" strokeWidth={0} dot={{ r: 4, fill: '#00F5A0', stroke: '#0A0A0F', strokeWidth: 1 }} legendType="none" />
+              <Line dataKey="pb" name="PB" stroke="#FF6B2B" strokeWidth={0} dot={{ r: 4, fill: '#FF6B2B', stroke: '#0A0A0F', strokeWidth: 1 }} legendType="none" />
             </LineChart>
           </ChartCard>
 
@@ -185,7 +185,7 @@ export default function Analytics() {
               <YAxis yAxisId="l" tick={AXIS} tickLine={false} axisLine={false} width={28} />
               <YAxis yAxisId="r" orientation="right" allowDecimals={false} tick={AXIS} tickLine={false} axisLine={false} width={24} />
               <Tooltip content={<DarkTooltip />} cursor={{ fill: '#1E1E2E55' }} />
-              <Bar yAxisId="l" dataKey="miles" name="Miles" radius={[4, 4, 0, 0]} fill="#00F5A0" />
+              <Bar yAxisId="l" dataKey="miles" name="Miles" radius={[4, 4, 0, 0]} fill="#FF6B2B" />
               <Line yAxisId="r" type="monotone" dataKey="runs" name="Runs" stroke="#FF9F40" strokeWidth={2.5} dot={{ r: 3, fill: '#FF9F40' }} />
             </ComposedChart>
           </ChartCard>

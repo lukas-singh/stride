@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import BottomNav from './BottomNav.jsx';
+import TransitionLayout from './TransitionLayout.jsx';
 
 function initials(name = '') {
   return name.trim().slice(0, 1).toUpperCase() || 'U';
@@ -11,12 +12,12 @@ export default function Layout({ children, title, subtitle }) {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen mx-auto max-w-[480px] bg-bg relative">
+    <div className="min-h-screen mx-auto max-w-[480px] relative">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-bg/90 backdrop-blur px-4 pt-4 pb-3 flex items-start justify-between">
+      <header className="sticky top-0 z-30 bg-bg/80 backdrop-blur-xl px-4 pt-4 pb-3 flex items-start justify-between">
         <div className="min-w-0">
           {title ? (
-            <h1 className="font-display font-bold text-2xl tracking-tight text-txt truncate">{title}</h1>
+            <h1 className="font-display font-bold text-2xl text-txt truncate page-title">{title}</h1>
           ) : (
             <Link to="/" className="font-display font-bold text-xl tracking-tight text-primary">
               Stride
@@ -36,7 +37,7 @@ export default function Layout({ children, title, subtitle }) {
       </header>
 
       {/* Page content */}
-      <main key={location.pathname} className="px-4 pb-32 route-fade">{children}</main>
+      <TransitionLayout className="px-4 pb-32 block">{children}</TransitionLayout>
 
       <BottomNav />
     </div>

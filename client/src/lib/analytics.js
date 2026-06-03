@@ -156,7 +156,7 @@ export function paceByType(runs) {
 }
 
 export const TYPE_COLORS = {
-  Easy: '#00F5A0',
+  Easy: '#00C46A',
   Tempo: '#7B61FF',
   'Long Run': '#3FA9FF',
   Interval: '#FF9F40',

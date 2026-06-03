@@ -19,7 +19,7 @@ export function recoveryScore({ sleep_hours, resting_hr, soreness, mood, baselin
 }
 
 function scoreColor(s) {
-  if (s >= 70) return '#00F5A0';
+  if (s >= 70) return '#00C46A';
   if (s >= 40) return '#FFD23F';
   return '#FF4D6D';
 }
@@ -48,7 +48,7 @@ function Gauge({ score }) {
 }
 
 function readiness(score) {
-  if (score >= 70) return { color: '#00F5A0', label: 'Hard effort OK 💪', sub: "You're well recovered. Green light for quality work." };
+  if (score >= 70) return { color: '#00C46A', label: 'Hard effort OK 💪', sub: "You're well recovered. Green light for quality work." };
   if (score >= 40) return { color: '#FFD23F', label: 'Easy run recommended', sub: 'Keep it conversational and listen to your body.' };
   return { color: '#FF4D6D', label: 'Rest day recommended', sub: 'Your body needs recovery. Prioritize sleep & hydration.' };
 }
@@ -242,7 +242,7 @@ function SliderRow({ label, value, min, max, step, unit, onChange }) {
         type="range" min={min} max={max} step={step} value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="w-full"
-        style={{ background: `linear-gradient(to right, #00F5A0 0%, #00F5A0 ${pct}%, #1E1E2E ${pct}%, #1E1E2E 100%)` }}
+        style={{ background: `linear-gradient(to right, #FF6B2B 0%, #FF6B2B ${pct}%, #1E1E2E ${pct}%, #1E1E2E 100%)` }}
       />
     </div>
   );

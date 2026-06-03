@@ -5,6 +5,13 @@ import { api } from '../api.js';
 import { fmtDate } from '../lib/format.js';
 import { computeAchievements, ACHIEVEMENT_CATEGORIES } from '../lib/achievements.js';
 
+const RARITY_COLORS = {
+  Common: '#6B6B80',
+  Rare: '#3FA9FF',
+  Epic: '#7B61FF',
+  Legendary: '#FF6B2B',
+};
+
 const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'unlocked', label: 'Unlocked' },
@@ -23,7 +30,9 @@ function fraction(a) {
 }
 
 function AchievementCard({ a }) {
+  const [flipped, setFlipped] = useState(false);
   const pct = Math.round(fraction(a) * 100);
+  const rarityColor = RARITY_COLORS[a.rarity] || '#6B6B80';
   const lockedLabel = a.detail
     ? a.detail
     : a.target > 1
@@ -31,33 +40,50 @@ function AchievementCard({ a }) {
       : a.desc;
 
   return (
-    <div
-      className={`card card-press p-4 flex flex-col h-full ${
-        a.unlocked ? 'border-primary/50 shadow-glow-sm' : 'opacity-60'
-      }`}
-    >
-      <div className="text-center">
-        <div className={`text-4xl ${a.unlocked ? '' : 'grayscale blur-[1px] opacity-70'}`}>{a.icon}</div>
-        <p className={`font-display font-bold text-sm mt-2 leading-tight ${a.unlocked ? 'text-txt' : 'text-muted'}`}>
-          {a.name}
-        </p>
-      </div>
+    <div className={`flip-card card-press h-44 ${flipped ? 'flipped' : ''}`} onClick={() => setFlipped((f) => !f)}>
+      <div className="flip-card-inner">
+        {/* FRONT */}
+        <div
+          className={`flip-face card p-3 items-center justify-center text-center ${a.unlocked ? 'border-primary/50 shadow-glow-sm' : 'opacity-70'}`}
+        >
+          <div className={`text-5xl ${a.unlocked ? '' : 'grayscale blur-[1.5px] opacity-70'}`}>{a.icon}</div>
+          <p className={`font-display font-bold text-sm mt-2 leading-tight ${a.unlocked ? 'text-txt' : 'text-muted'}`}>{a.name}</p>
+          <span
+            className="chip text-[9px] py-0 mt-2"
+            style={{ color: rarityColor, backgroundColor: `${rarityColor}1A`, border: `1px solid ${rarityColor}40` }}
+          >
+            {a.rarity}
+          </span>
+          <p className={`text-[9px] mt-1 font-semibold ${a.unlocked ? 'text-primary' : 'text-muted'}`}>
+            {a.unlocked ? 'UNLOCKED' : 'LOCKED'}
+          </p>
+        </div>
 
-      {a.unlocked ? (
-        <div className="mt-2 text-center flex-1 flex flex-col justify-end">
-          <p className="text-xs text-primary font-semibold">{a.detail || a.desc}</p>
-          {a.dateUnlocked && (
-            <p className="text-[10px] text-muted mt-1">Unlocked {fmtDate(a.dateUnlocked, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-          )}
-        </div>
-      ) : (
-        <div className="mt-2 flex-1 flex flex-col justify-end">
-          <p className="text-[11px] text-muted text-center mb-1.5 leading-tight">{lockedLabel}</p>
-          <div className="h-1.5 rounded-full bg-bg overflow-hidden">
-            <div className="h-full rounded-full bg-muted" style={{ width: `${pct}%` }} />
+        {/* BACK */}
+        <div
+          className={`flip-face flip-back card p-3 justify-between text-center ${a.unlocked ? '' : ''}`}
+          style={a.unlocked ? { background: 'linear-gradient(140deg, rgba(123,97,255,0.18), rgba(255,107,43,0.10))', borderColor: 'rgba(123,97,255,0.4)' } : undefined}
+        >
+          <div>
+            <p className="font-display font-bold text-xs text-txt leading-tight">{a.name}</p>
+            <p className="text-[10px] text-muted mt-1 leading-snug">{a.desc}</p>
           </div>
+          {a.unlocked ? (
+            <div>
+              {a.detail && <p className="text-[11px] text-primary font-semibold">{a.detail}</p>}
+              {a.dateUnlocked && <p className="text-[9px] text-muted mt-0.5">{fmtDate(a.dateUnlocked, { month: 'short', day: 'numeric', year: 'numeric' })}</p>}
+            </div>
+          ) : (
+            <div>
+              <p className="text-[10px] text-muted mb-1">{lockedLabel}</p>
+              <div className="h-1.5 rounded-full bg-bg overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: rarityColor }} />
+              </div>
+            </div>
+          )}
+          <span className="text-[8px] uppercase tracking-widest text-muted">{a.category}</span>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -75,7 +75,7 @@ export default function Profile() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             <StatCard label="Total Runs" value={summary.totalRuns} />
-            <StatCard label="Total Miles" value={summary.totalMiles.toFixed(1)} unit="mi" accent="#00F5A0" />
+            <StatCard label="Total Miles" value={summary.totalMiles.toFixed(1)} unit="mi" accent="#FF6B2B" />
             <StatCard label="Total Time" value={fmtDuration(summary.totalSeconds)} />
             <StatCard label="Avg Pace" value={fmtPace(summary.avgPace)} unit="/mi" accent="#7B61FF" />
           </div>

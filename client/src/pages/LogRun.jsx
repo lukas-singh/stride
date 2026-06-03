@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import { useToast } from '../components/Toast.jsx';
+import { useConfetti } from '../components/ConfettiEffect.jsx';
 import { api } from '../api.js';
 import { todayISO, fmtPace, difficultyColor } from '../lib/format.js';
 import { WEATHER_OPTIONS } from '../lib/weather.js';
 import { computePersonalBests, diffPersonalBests } from '../lib/personalBests.js';
+import { computeAchievements } from '../lib/achievements.js';
 
 const RUN_TYPES = ['Easy', 'Tempo', 'Long Run', 'Interval', 'Race', 'Recovery'];
 
@@ -53,6 +55,7 @@ export default function LogRun() {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
+  const confetti = useConfetti();
   const editRun = location.state?.run;
   const isEdit = !!editRun;
 
@@ -72,6 +75,7 @@ export default function LogRun() {
   const [runType, setRunType] = useState(editRun?.run_type || 'Easy');
   const [notes, setNotes] = useState(editRun?.notes || '');
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
 
   const durationSeconds = (parseInt(mins, 10) || 0) * 60 + (parseInt(secs, 10) || 0);
   const dist = parseFloat(distance) || 0;
@@ -110,25 +114,33 @@ export default function LogRun() {
         await api(`/runs/${editRun.id}`, { method: 'PUT', body: payload });
         toast.success('Run updated');
       } else {
-        // capture previous bests so we can celebrate any new PRs after saving
+        // capture previous bests + unlocked achievements to celebrate new ones
         let existing = [];
         try { existing = await api('/runs'); } catch { /* offline-safe */ }
         const prevValues = computePersonalBests(existing).values;
+        const prevUnlocked = new Set(computeAchievements(existing).filter((a) => a.unlocked).map((a) => a.id));
 
         const saved = await api('/runs', { method: 'POST', body: payload });
         toast.success('Run saved 🏃');
 
         try {
-          const nextValues = computePersonalBests([saved, ...existing]).values;
-          const beaten = diffPersonalBests(prevValues, nextValues);
+          const nextRuns = [saved, ...existing];
+          const beaten = diffPersonalBests(prevValues, computePersonalBests(nextRuns).values);
           if (beaten.length) {
             // hand off to Race Vault so it can pulse the matching cards
             localStorage.setItem('stride_new_pbs', JSON.stringify({ ids: beaten.map((b) => b.id), ts: Date.now() }));
             beaten.forEach((b) => toast.trophy(`New Personal Best! ${b.label}`));
           }
-        } catch { /* PB celebration is best-effort */ }
+          const newAchievements = computeAchievements(nextRuns).filter((a) => a.unlocked && !prevUnlocked.has(a.id));
+          if (newAchievements.length) {
+            confetti();
+            newAchievements.slice(0, 3).forEach((a) => toast.trophy(`Achievement: ${a.name}`));
+          }
+        } catch { /* celebration is best-effort */ }
       }
-      navigate('/', { replace: true });
+      // brief checkmark before redirecting
+      setDone(true);
+      setTimeout(() => navigate('/', { replace: true }), 550);
     } catch (err) {
       toast.error(err.message);
       setBusy(false);
@@ -271,8 +283,8 @@ export default function LogRun() {
           />
         </div>
 
-        <button type="submit" className="btn-primary text-base" disabled={busy}>
-          {busy ? 'Saving…' : isEdit ? 'Update Run' : 'Save Run'}
+        <button type="submit" className="btn-primary text-base" disabled={busy || done}>
+          {done ? <span className="check-pop inline-block text-xl">✓</span> : busy ? 'Saving…' : isEdit ? 'Update Run' : 'Save Run'}
         </button>
       </form>
     </Layout>
