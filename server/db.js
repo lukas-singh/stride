@@ -6,6 +6,9 @@ import { createClient } from '@libsql/client';
 const url = process.env.TURSO_DATABASE_URL || 'file:./stride.db';
 const authToken = process.env.TURSO_AUTH_TOKEN;
 
+console.log('[stride] TURSO_DATABASE_URL:', process.env.TURSO_DATABASE_URL ? 'SET' : 'NOT SET');
+console.log('[stride] TURSO_AUTH_TOKEN:', process.env.TURSO_AUTH_TOKEN ? 'SET (length=' + process.env.TURSO_AUTH_TOKEN.length + ')' : 'NOT SET');
+
 const db = createClient(authToken ? { url, authToken } : { url });
 
 // Schema — identical to the previous better-sqlite3 schema.
