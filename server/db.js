@@ -1,14 +1,15 @@
-import Database from 'better-sqlite3';
-import { fileURLToPath } from 'url';
-import path from 'path';
+import { createClient } from '@libsql/client';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const db = new Database(path.join(__dirname, 'stride.db'));
+// Turso (libsql) in production; a local SQLite file in development.
+// If TURSO_DATABASE_URL is unset we fall back to a local file so the app
+// still runs without any Turso credentials.
+const url = process.env.TURSO_DATABASE_URL || 'file:./stride.db';
+const authToken = process.env.TURSO_AUTH_TOKEN;
 
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+const db = createClient(authToken ? { url, authToken } : { url });
 
-db.exec(`
+// Schema — identical to the previous better-sqlite3 schema.
+await db.executeMultiple(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT UNIQUE NOT NULL,
@@ -84,14 +85,43 @@ db.exec(`
   );
 `);
 
-// --- lightweight migrations for existing databases ---
-// SQLite has no "ADD COLUMN IF NOT EXISTS", so check the schema first.
-function ensureColumn(table, column, definition) {
-  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
-  if (!cols.includes(column)) {
-    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-  }
+// Lightweight migration for databases created before weather_condition existed.
+const runCols = (await db.execute('PRAGMA table_info(runs)')).rows.map((r) => r.name);
+if (!runCols.includes('weather_condition')) {
+  await db.execute("ALTER TABLE runs ADD COLUMN weather_condition TEXT DEFAULT ''");
 }
-ensureColumn('runs', 'weather_condition', "TEXT DEFAULT ''");
+
+// --- query helpers ---------------------------------------------------------
+// libsql rows support index + name access; build plain objects so JSON
+// responses are clean regardless of the driver's Row internals.
+function toObjects(result) {
+  const cols = result.columns;
+  return result.rows.map((r) => {
+    const o = {};
+    for (let i = 0; i < cols.length; i++) o[cols[i]] = r[i];
+    return o;
+  });
+}
+
+// SELECT -> array of plain objects
+export async function all(sql, args = []) {
+  const result = await db.execute({ sql, args });
+  return toObjects(result);
+}
+
+// SELECT -> first plain object (or undefined)
+export async function get(sql, args = []) {
+  const rows = await all(sql, args);
+  return rows[0];
+}
+
+// INSERT/UPDATE/DELETE -> { lastInsertRowid:Number, changes:Number }
+export async function run(sql, args = []) {
+  const result = await db.execute({ sql, args });
+  return {
+    lastInsertRowid: result.lastInsertRowid != null ? Number(result.lastInsertRowid) : null,
+    changes: result.rowsAffected,
+  };
+}
 
 export default db;
