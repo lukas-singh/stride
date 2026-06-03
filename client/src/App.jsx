@@ -8,6 +8,7 @@ import Coach from './pages/Coach.jsx';
 import Analytics from './pages/Analytics.jsx';
 import RaceVault from './pages/RaceVault.jsx';
 import Recovery from './pages/Recovery.jsx';
+import Achievements from './pages/Achievements.jsx';
 import Profile from './pages/Profile.jsx';
 
 function protect(el) {
@@ -25,6 +26,7 @@ export default function App() {
       <Route path="/analytics" element={protect(<Analytics />)} />
       <Route path="/vault" element={protect(<RaceVault />)} />
       <Route path="/recovery" element={protect(<Recovery />)} />
+      <Route path="/achievements" element={protect(<Achievements />)} />
       <Route path="/profile" element={protect(<Profile />)} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

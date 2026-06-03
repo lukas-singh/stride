@@ -1,10 +1,13 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 
+// Five tabs + the center Log Run FAB. Icon-only on mobile so it stays
+// uncrowded at 375px (labels like "Achievements" wouldn't fit cleanly).
 const tabs = [
   { to: '/', icon: '🏠', label: 'Home', end: true },
   { to: '/coach', icon: '🤖', label: 'Coach' },
   { to: '/analytics', icon: '📊', label: 'Stats' },
   { to: '/recovery', icon: '💤', label: 'Recovery' },
+  { to: '/achievements', icon: '🏆', label: 'Achievements' },
 ];
 
 function Tab({ tab }) {
@@ -12,22 +15,21 @@ function Tab({ tab }) {
     <NavLink
       to={tab.to}
       end={tab.end}
-      className="flex-1 flex flex-col items-center justify-center gap-0.5 h-full min-h-[48px] relative"
+      aria-label={tab.label}
+      title={tab.label}
+      className="flex-1 flex flex-col items-center justify-center gap-1 h-full min-h-[48px] relative"
     >
       {({ isActive }) => (
         <>
           <span
-            className={`text-xl transition-transform duration-150 ${isActive ? 'scale-110' : 'opacity-70'}`}
+            className={`text-2xl transition-transform duration-150 ${isActive ? 'scale-110' : 'opacity-60'}`}
             style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(0,245,160,0.7))' } : undefined}
           >
             {tab.icon}
           </span>
-          <span className={`text-[10px] font-semibold ${isActive ? 'text-primary' : 'text-muted'}`}>
-            {tab.label}
-          </span>
           {/* active dot indicator (with glow) */}
           <span
-            className={`mt-0.5 w-1.5 h-1.5 rounded-full transition-all duration-150 ${
+            className={`w-1.5 h-1.5 rounded-full transition-all duration-150 ${
               isActive ? 'bg-primary shadow-glow scale-100' : 'bg-transparent scale-0'
             }`}
           />
@@ -41,24 +43,31 @@ export default function BottomNav() {
   const navigate = useNavigate();
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40">
-      <div className="relative h-[68px] bg-surface/70 backdrop-blur-xl border-t border-border flex items-stretch px-2 pb-[env(safe-area-inset-bottom)]">
-        <Tab tab={tabs[0]} />
-        <Tab tab={tabs[1]} />
-        {/* center spacer for FAB */}
-        <div className="w-16 shrink-0" />
-        <Tab tab={tabs[2]} />
-        <Tab tab={tabs[3]} />
+      <div className="relative h-[68px] bg-surface/70 backdrop-blur-xl border-t border-border flex items-stretch px-1 pb-[env(safe-area-inset-bottom)]">
+        {/* equal-width side groups keep the center spacer (and FAB) exactly centered */}
+        <div className="flex-1 flex items-stretch">
+          <Tab tab={tabs[0]} />
+          <Tab tab={tabs[1]} />
+          <Tab tab={tabs[2]} />
+        </div>
 
-        {/* Log Run FAB */}
-        <button
-          onClick={() => navigate('/log')}
-          aria-label="Log a run"
-          className="absolute left-1/2 -translate-x-1/2 -top-5 w-16 h-16 rounded-full bg-primary
-                     text-bg shadow-glow flex items-center justify-center text-3xl font-light
-                     border-4 border-bg active:scale-95 transition-transform duration-150"
-        >
-          +
-        </button>
+        {/* centered spacer hosting the raised Log Run FAB */}
+        <div className="w-16 shrink-0 relative">
+          <button
+            onClick={() => navigate('/log')}
+            aria-label="Log a run"
+            className="absolute left-1/2 -translate-x-1/2 -top-5 w-16 h-16 rounded-full bg-primary
+                       text-bg shadow-glow flex items-center justify-center text-3xl font-light
+                       border-4 border-bg active:scale-95 transition-transform duration-150"
+          >
+            +
+          </button>
+        </div>
+
+        <div className="flex-1 flex items-stretch">
+          <Tab tab={tabs[3]} />
+          <Tab tab={tabs[4]} />
+        </div>
       </div>
     </nav>
   );
