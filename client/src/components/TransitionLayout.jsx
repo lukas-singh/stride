@@ -7,7 +7,7 @@ let lastPath = null;
 
 // Order used to decide slide direction. Lower index = "earlier" tab; navigating
 // to a lower index slides back (from the left), otherwise forward (from right).
-const ORDER = ['/', '/coach', '/analytics', '/recovery', '/achievements', '/vault', '/profile', '/log', '/runs'];
+const ORDER = ['/', '/coach', '/analytics', '/recovery', '/training-load', '/achievements', '/vault', '/profile', '/log', '/runs'];
 
 function rank(pathname) {
   // match the most specific known prefix

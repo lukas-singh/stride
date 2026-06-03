@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import StatCard from '../components/StatCard.jsx';
 import RunCard from '../components/RunCard.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { StatSkeletonGrid, CardSkeletonList } from '../components/Skeleton.jsx';
+import LoadGauge from '../components/LoadGauge.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
+import { computeTrainingLoad } from '../lib/trainingLoad.js';
 import { fmtDuration, fmtPace, fmtDate, relativeDay } from '../lib/format.js';
 import { weatherIcon } from '../lib/weather.js';
 import useCountUp from '../hooks/useCountUp.js';
@@ -71,10 +73,38 @@ export default function Dashboard() {
   const milesCount = useCountUp(stats ? stats.miles : 0, 600);
   const runsCount = useCountUp(stats ? stats.runs : 0, 600);
 
+  const tl = useMemo(() => (runs ? computeTrainingLoad(runs) : null), [runs]);
+
   return (
     <Layout title={`${greeting()}, ${firstName} 👋`} subtitle={today}>
+      {/* Training Load gauge */}
+      {!loading && (
+        <Link to="/training-load" className="card card-press p-5 mt-2 block">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Training Load</h2>
+            <span title="Based on your last 42 days of training" className="text-muted text-sm cursor-help" aria-label="Based on your last 42 days of training">ⓘ</span>
+          </div>
+          {tl.hasData && tl.count >= 3 ? (
+            <>
+              <div className="mt-3"><LoadGauge size={180} score={tl.score} color={tl.zone.color} label={tl.zone.name} /></div>
+              <div className="mt-4 text-center">
+                <p className="text-[10px] uppercase tracking-wide text-muted">Ready to Run</p>
+                <span
+                  className="inline-flex items-center gap-1 mt-1 rounded-lg px-3 py-1.5 font-bold text-sm"
+                  style={{ color: tl.readiness.color, backgroundColor: `${tl.readiness.color}1A`, border: `1px solid ${tl.readiness.color}40` }}
+                >
+                  {tl.readiness.emoji} {tl.readiness.label}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="mt-3"><LoadGauge size={180} disabled message="Log more runs to see your load score" /></div>
+          )}
+        </Link>
+      )}
+
       {/* Weekly summary */}
-      <section className="mt-2">
+      <section className="mt-6">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">This Week</h2>
         {loading ? (
           <StatSkeletonGrid />

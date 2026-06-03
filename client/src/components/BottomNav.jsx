@@ -1,13 +1,14 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 
-// Five tabs + the center Log Run FAB. Icon-only on mobile so it stays
-// uncrowded at 375px (labels like "Achievements" wouldn't fit cleanly).
+// Six tabs split 3 / 3 around the center Log Run FAB. Icon-only on mobile so
+// it stays uncrowded at 375px.
 const tabs = [
   { to: '/', icon: '🏠', label: 'Home', end: true, anim: 'anim-bounce' },
   { to: '/coach', icon: '🤖', label: 'Coach', anim: 'anim-spin' },
   { to: '/analytics', icon: '📊', label: 'Stats', anim: 'anim-flip' },
   { to: '/recovery', icon: '💤', label: 'Recovery', anim: 'anim-pulse' },
-  { to: '/achievements', icon: '🏆', label: 'Achievements', anim: 'anim-shake' },
+  { to: '/training-load', icon: '🔥', label: 'Load', anim: 'anim-shake' },
+  { to: '/achievements', icon: '🏆', label: 'Achievements', anim: 'anim-bounce' },
 ];
 
 function Tab({ tab }) {
@@ -67,6 +68,7 @@ export default function BottomNav() {
         <div className="flex-1 flex items-stretch">
           <Tab tab={tabs[3]} />
           <Tab tab={tabs[4]} />
+          <Tab tab={tabs[5]} />
         </div>
       </div>
     </nav>

@@ -9,6 +9,17 @@ import { CardSkeletonList } from '../components/Skeleton.jsx';
 import { api } from '../api.js';
 import { fmtPace } from '../lib/format.js';
 import * as A from '../lib/analytics.js';
+import { computeWeeklyTSS } from '../lib/trainingLoad.js';
+
+function tssTrend(runs) {
+  const w = computeWeeklyTSS(runs).slice(-12).map((x) => ({
+    week: new Date(x.weekStart + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+    tss: x.tss,
+  }));
+  const peak = w.reduce((m, d) => Math.max(m, d.tss), 0);
+  const insight = w.length ? `Peak training week: ${peak} TSS. Higher = more total stress.` : 'Log runs to see training stress.';
+  return { data: w, insight };
+}
 
 const AXIS = { fontSize: 11, fill: '#6B6B80' };
 const GRID = '#1E1E2E';
@@ -76,6 +87,7 @@ export default function Analytics() {
       elev: A.elevationPaceScatter(runs),
       weekly: A.weeklyMileageCount(runs),
       type: A.paceByType(runs),
+      tss: tssTrend(runs),
     };
   }, [runs]);
 
@@ -201,6 +213,17 @@ export default function Analytics() {
                 {c.type.data.map((d, i) => <Cell key={i} fill={A.TYPE_COLORS[d.type] || '#6B6B80'} />)}
               </Bar>
             </BarChart>
+          </ChartCard>
+
+          {/* 9. Training stress over time */}
+          <ChartCard title="Training Stress Over Time" insight={c.tss.insight} empty={!c.tss.data.length}>
+            <LineChart data={c.tss.data}>
+              <CartesianGrid stroke={GRID} vertical={false} />
+              <XAxis dataKey="week" tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} />
+              <YAxis tick={AXIS} tickLine={false} axisLine={false} width={32} />
+              <Tooltip content={<DarkTooltip valueFmt={(v) => `${Math.round(v)} TSS`} />} />
+              <Line type="monotone" dataKey="tss" name="Weekly TSS" stroke="#FF6B2B" strokeWidth={2.5} dot={{ r: 3, fill: '#FF6B2B' }} activeDot={{ r: 5 }} />
+            </LineChart>
           </ChartCard>
         </div>
       )}
